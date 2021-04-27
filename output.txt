@@ -1,0 +1,541 @@
+0a1,7
+> """
+> The classic game of flappy bird. Make with python
+> and pygame. Features pixel perfect collision using masks :o
+> Date Modified:  Jul 30, 2019
+> Author: Tech With Tim
+> Estimated Work Time: 5 hours (1 just for that damn collision)
+> """
+2,4d8
+< import neat
+< import time
+< import os
+6c10,15
+< pygame.font.init()
+---
+> import os
+> import time
+> import neat
+> # import visualize
+> import pickle
+> pygame.font.init()  # init font
+8c17
+< WIN_WIDTH = 500
+---
+> WIN_WIDTH = 600
+10,19c19
+< 
+< BIRD_IMGs = [
+<     pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bird1.png"))),
+<     pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bird2.png"))),
+<     pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bird3.png")))
+<     ]
+< 
+< PIPES = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "pipe.png")))
+< BACKGROUND = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bg.png")))
+< BASE = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "base.png")))
+---
+> FLOOR = 730
+20a21,22
+> END_FONT = pygame.font.SysFont("comicsans", 70)
+> DRAW_LINES = False
+21a24,25
+> WIN = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+> pygame.display.set_caption("Flappy Bird")
+23,26c27,37
+< 
+< 
+< class Bird():
+<     IMGS = BIRD_IMGs
+---
+> pipe_img = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","pipe.png")).convert_alpha())
+> bg_img = pygame.transform.scale(pygame.image.load(os.path.join("imgs","bg.png")).convert_alpha(), (600, 900))
+> bird_images = [pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","bird" + str(x) + ".png"))) for x in range(1,4)]
+> base_img = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs","base.png")).convert_alpha())
+> 
+> gen = 0
+> 
+> class Bird:
+>     """
+>     Bird class representing the flappy bird
+>     """
+28c39,40
+<     ROTATION_VEL = 20
+---
+>     IMGS = bird_images
+>     ROT_VEL = 20
+30c42,49
+<     def __init__(self,x,y):
+---
+> 
+>     def __init__(self, x, y):
+>         """
+>         Initialize the object
+>         :param x: starting x pos (int)
+>         :param y: starting y pos (int)
+>         :return: None
+>         """
+33c52
+<         self.tilt = 0
+---
+>         self.tilt = 0  # degrees to tilt
+40a60,63
+>         """
+>         make the bird jump
+>         :return: None
+>         """
+45a69,72
+>         """
+>         make the bird move
+>         :return: None
+>         """
+48,49c75,76
+<         #physics equation
+<         displacement =  self.vel * self.tick_count + 1.5 * self.tick_count**2
+---
+>         # for downward acceleration
+>         displacement = self.vel*(self.tick_count) + 0.5*(3)*(self.tick_count)**2  # calculate displacement
+50a78
+>         # terminal velocity
+55c83
+<             d -= 2
+---
+>             displacement -= 2
+57c85
+<         self.y += displacement
+---
+>         self.y = self.y + displacement
+59c87
+<         if displacement < 0 or self.y < self.height + 50:
+---
+>         if displacement < 0 or self.y < self.height + 50:  # tilt up
+62c90
+<         else:
+---
+>         else:  # tilt down
+64c92
+<                 self.tilt -= self.ROTATION_VEL
+---
+>                 self.tilt -= self.ROT_VEL
+66a95,99
+>         """
+>         draw the bird
+>         :param win: pygame window or surface
+>         :return: None
+>         """
+69,70c102
+< 
+<         # image flapping
+---
+>         # For animation of bird, loop through three images
+73c105
+<         elif self.img_count <= self.ANIMATION_TIME * 2:
+---
+>         elif self.img_count <= self.ANIMATION_TIME*2:
+75c107
+<         elif self.img_count <= self.ANIMATION_TIME * 3:
+---
+>         elif self.img_count <= self.ANIMATION_TIME*3:
+77c109
+<         elif self.img_count <= self.ANIMATION_TIME * 4:
+---
+>         elif self.img_count <= self.ANIMATION_TIME*4:
+79c111
+<         elif self.img_count == self.ANIMATION_TIME * 4 + 1:
+---
+>         elif self.img_count == self.ANIMATION_TIME*4 + 1:
+82a115
+>         # so when bird is nose diving it isn't flapping
+85c118,119
+<             self.img_count = self.ANIMATION_TIME * 2
+---
+>             self.img_count = self.ANIMATION_TIME*2
+> 
+87,89c121,122
+<         rotated_image = pygame.transform.rotate(self.img, self.tilt)
+<         new_rect = rotated_image.get_rect(center = self.img.get_rect(topleft = (self.x, self.y)).center)
+<         win.blit(rotated_image, new_rect.topleft)
+---
+>         # tilt the bird
+>         blitRotateCenter(win, self.img, (self.x, self.y), self.tilt)
+91a125,128
+>         """
+>         gets the mask for the current image of the bird
+>         :return: None
+>         """
+95,96c132,135
+< 
+< class Pipe:
+---
+> class Pipe():
+>     """
+>     represents a pipe object
+>     """
+100a140,145
+>         """
+>         initialize pipe object
+>         :param x: int
+>         :param y: int
+>         :return" None
+>         """
+103a149
+>         # where the top and bottom of the pipe is
+106,107c152,154
+<         self.PIPE_TOP = pygame.transform.flip(PIPES, False, True)
+<         self.PIPE_BOTTOM = PIPES
+---
+> 
+>         self.PIPE_TOP = pygame.transform.flip(pipe_img, False, True)
+>         self.PIPE_BOTTOM = pipe_img
+109a157
+> 
+113c161,165
+<         self.height = random.randrange(50,450)
+---
+>         """
+>         set the height of the pipe, from the top of the screen
+>         :return: None
+>         """
+>         self.height = random.randrange(50, 450)
+117a170,173
+>         """
+>         move pipe based on vel
+>         :return: None
+>         """
+120a177,182
+>         """
+>         draw both the top and bottom of the pipe
+>         :param win: pygame window/surface
+>         :return: None
+>         """
+>         # draw top
+121a184
+>         # draw bottom
+124c187,193
+<     def collide(self, bird):
+---
+> 
+>     def collide(self, bird, win):
+>         """
+>         returns if a point is colliding with the pipe
+>         :param bird: Bird object
+>         :return: Bool
+>         """
+128d196
+< 
+132,133c200,201
+<         bottom_point = bird_mask.overlap(bottom_mask, bottom_offset)
+<         top_point = bird_mask.overlap(bottom_mask, top_offset)
+---
+>         b_point = bird_mask.overlap(bottom_mask, bottom_offset)
+>         t_point = bird_mask.overlap(top_mask,top_offset)
+135c203
+<         if bottom_point or top_point:
+---
+>         if b_point or t_point:
+137,138d204
+<         return False
+< 
+139a206
+>         return False
+141a209,211
+>     """
+>     Represnts the moving floor of the game
+>     """
+143,144c213,214
+<     WIDTH = BASE.get_width()
+<     img = BASE
+---
+>     WIDTH = base_img.get_width()
+>     IMG = base_img
+146a217,221
+>         """
+>         Initialize the object
+>         :param y: int
+>         :return: None
+>         """
+148c223
+<         self. x1 = 0
+---
+>         self.x1 = 0
+151a227,230
+>         """
+>         move floor so it looks like its scrolling
+>         :return: None
+>         """
+154d232
+< 
+161,169c239,276
+< 
+<     def draw(self,win):
+<         win.blit(self.img, (self.x1, self.y))
+<         win.blit(self.img, (self.x2, self.y))
+< 
+< 
+< 
+< def draw_window(win, birds, pipes, base, score):
+<     win.blit(BACKGROUND, (0,0))
+---
+>     def draw(self, win):
+>         """
+>         Draw the floor. This is two images that move together.
+>         :param win: the pygame surface/window
+>         :return: None
+>         """
+>         win.blit(self.IMG, (self.x1, self.y))
+>         win.blit(self.IMG, (self.x2, self.y))
+> 
+> 
+> def blitRotateCenter(surf, image, topleft, angle):
+>     """
+>     Rotate a surface and blit it to the window
+>     :param surf: the surface to blit to
+>     :param image: the image surface to rotate
+>     :param topLeft: the top left position of the image
+>     :param angle: a float value for angle
+>     :return: None
+>     """
+>     rotated_image = pygame.transform.rotate(image, angle)
+>     new_rect = rotated_image.get_rect(center = image.get_rect(topleft = topleft).center)
+> 
+>     surf.blit(rotated_image, new_rect.topleft)
+> 
+> def draw_window(win, birds, pipes, base, score, gen, pipe_ind):
+>     """
+>     draws the windows for the main game loop
+>     :param win: pygame window surface
+>     :param bird: a Bird object
+>     :param pipes: List of pipes
+>     :param score: score of the game (int)
+>     :param gen: current generation
+>     :param pipe_ind: index of closest pipe
+>     :return: None
+>     """
+>     if gen == 0:
+>         gen = 1
+>     win.blit(bg_img, (0,0))
+174,175d280
+<     text = STAT_FONT.render("Score: " + str(score), 1, (255,255,255))
+<     win.blit(text, (WIN_WIDTH - 10 - text.get_width(), 10))
+177d281
+< 
+178a283,290
+>         # draw lines from bird to pipe
+>         if DRAW_LINES:
+>             try:
+>                 pygame.draw.line(win, (255,0,0), (bird.x+bird.img.get_width()/2, bird.y + bird.img.get_height()/2), (pipes[pipe_ind].x + pipes[pipe_ind].PIPE_TOP.get_width()/2, pipes[pipe_ind].height), 5)
+>                 pygame.draw.line(win, (255,0,0), (bird.x+bird.img.get_width()/2, bird.y + bird.img.get_height()/2), (pipes[pipe_ind].x + pipes[pipe_ind].PIPE_BOTTOM.get_width()/2, pipes[pipe_ind].bottom), 5)
+>             except:
+>                 pass
+>         # draw bird
+180d291
+<     pygame.display.update()
+181a293,305
+>     # score
+>     score_label = STAT_FONT.render("Score: " + str(score),1,(255,255,255))
+>     win.blit(score_label, (WIN_WIDTH - score_label.get_width() - 15, 10))
+> 
+>     # generations
+>     score_label = STAT_FONT.render("Gens: " + str(gen-1),1,(255,255,255))
+>     win.blit(score_label, (10, 10))
+> 
+>     # alive
+>     score_label = STAT_FONT.render("Alive: " + str(len(birds)),1,(255,255,255))
+>     win.blit(score_label, (10, 50))
+> 
+>     pygame.display.update()
+184c308,320
+< def eval(genomes, config):
+---
+> def eval_genomes(genomes, config):
+>     """
+>     runs the simulation of the current population of
+>     birds and sets their fitness based on the distance they
+>     reach in the game.
+>     """
+>     global WIN, gen
+>     win = WIN
+>     gen += 1
+> 
+>     # start by creating lists holding the genome itself, the
+>     # neural network associated with the genome and the
+>     # bird object that uses that network to play
+186d321
+<     geGnomes = []
+188,192c323,326
+< 
+<     #tuple of (genomeID, genome object)
+<     for _, g in geGnomes:
+<         g.fitness = 0;
+<         net = neat.nn.FeedForwardNetwork.create(g, config)
+---
+>     ge = []
+>     for genome_id, genome in genomes:
+>         genome.fitness = 0  # start with fitness level of 0
+>         net = neat.nn.FeedForwardNetwork.create(genome, config)
+195,197c329
+<         ge.append(g)
+< 
+< 
+---
+>         ge.append(genome)
+199,203c331,332
+< 
+<     base = Base(730)
+<     pipes = [Pipe(600)]
+<     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+<     run = True
+---
+>     base = Base(FLOOR)
+>     pipes = [Pipe(700)]
+204a334
+> 
+206a337
+>     run = True
+209,210c340,342
+<         for e in pygame.event.get():
+<             if e.type == pygame.QUIT:
+---
+> 
+>         for event in pygame.event.get():
+>             if event.type == pygame.QUIT:
+216,217d347
+< 
+< 
+220,224c350,351
+<             if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
+<                 pipe_ind = 1
+<         else:
+<             run = False
+<             break
+---
+>             if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():  # determine whether to use the first or second
+>                 pipe_ind = 1                                                                 # pipe on the screen for neural network input
+226,227c353
+<         for x, bird in enumerate(birds):
+<             bird.move()
+---
+>         for x, bird in enumerate(birds):  # give each bird a fitness of 0.1 for each frame it stays alive
+228a355
+>             bird.move()
+230c357,358
+<             output = nets[x].activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y-pipes[pipe_ind].bottom)))
+---
+>             # send bird location, top pipe location and bottom pipe location and determine from network whether to jump or not
+>             output = nets[birds.index(bird)].activate((bird.y, abs(bird.y - pipes[pipe_ind].height), abs(bird.y - pipes[pipe_ind].bottom)))
+232c360
+<             if output[0] > 0.5:
+---
+>             if output[0] > 0.5:  # we use a tanh activation function so result will be between -1 and 1. if over 0.5 jump
+234a363,364
+>         base.move()
+> 
+237d366
+<         #collision
+240,249c369,375
+<             for x, bird in enumerate(birds):
+<                 if pipe.collide(bird):
+<                     ge[x].fitness -= 1
+<                     birds.pop(x)
+<                     nets.pop(x)
+<                     ge.pop(x)
+< 
+<                 if not pipe.passed and pipe.x < bird.x:
+<                     pipe.passed = True
+<                     add_pipe = True
+---
+>             # check for collision
+>             for bird in birds:
+>                 if pipe.collide(bird, win):
+>                     ge[birds.index(bird)].fitness -= 1
+>                     nets.pop(birds.index(bird))
+>                     ge.pop(birds.index(bird))
+>                     birds.pop(birds.index(bird))
+253a380,383
+>             if not pipe.passed and pipe.x < bird.x:
+>                 pipe.passed = True
+>                 add_pipe = True
+> 
+256,267c386,416
+<             for g in ge:
+<                 g.fitness += 5
+<             pipes.append(Pipe(600))
+< 
+<         for i in rem:
+<             pipes.remove(i)
+< 
+<         for x, bird in enumerate(birds):
+<             if bird.y + bird.img.get_height() >= 730 or bird.y < 0:
+<                 birds.pop(x)
+<                 nets.pop(x)
+<                 ge.pop(x)
+---
+>             # can add this line to give more reward for passing through a pipe (not required)
+>             for genome in ge:
+>                 genome.fitness += 5
+>             pipes.append(Pipe(WIN_WIDTH))
+> 
+>         for r in rem:
+>             pipes.remove(r)
+> 
+>         for bird in birds:
+>             if bird.y + bird.img.get_height() - 10 >= FLOOR or bird.y < -50:
+>                 nets.pop(birds.index(bird))
+>                 ge.pop(birds.index(bird))
+>                 birds.pop(birds.index(bird))
+> 
+>         draw_window(WIN, birds, pipes, base, score, gen, pipe_ind)
+> 
+>         # break if score gets large enough
+>         '''if score > 20:
+>             pickle.dump(nets[0],open("best.pickle", "wb"))
+>             break'''
+> 
+> 
+> def run(config_file):
+>     """
+>     runs the NEAT algorithm to train a neural network to play flappy bird.
+>     :param config_file: location of config file
+>     :return: None
+>     """
+>     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction,
+>                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
+>                          config_file)
+269,274c418,419
+<         base.move()
+<         draw_window(win, birds, pipes, base, score)
+< 
+< 
+< def run(config_path):
+<     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
+---
+>     # Create the population, which is the top-level object for a NEAT run.
+>     p = neat.Population(config)
+276,280c421,422
+<     #create population
+<     population = neat.Population(config)
+< 
+<     #output
+<     population.add_reporter(neat.StdOutReporter(True))
+---
+>     # Add a stdout reporter to show progress in the terminal.
+>     p.add_reporter(neat.StdOutReporter(True))
+282,283c424,425
+<     population.add_reporter(stats)
+< 
+---
+>     p.add_reporter(stats)
+>     #p.add_reporter(neat.Checkpointer(5))
+285c427,428
+<     winner = population.run(eval,50)
+---
+>     # Run for up to 50 generations.
+>     winner = p.run(eval_genomes, 50)
+286a430
+>     # show final stats
+288a433
+> 
+289a435,437
+>     # Determine path to configuration file. This path manipulation is
+>     # here so that the script will run successfully regardless of the
+>     # current working directory.
